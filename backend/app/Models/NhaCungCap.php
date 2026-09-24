@@ -5,6 +5,7 @@ namespace App\Models;
 use App\NhaCungCapStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'ten_nha_cung_cap',
@@ -31,5 +32,10 @@ class NhaCungCap extends Model
         return [
             'trang_thai' => NhaCungCapStatus::class,
         ];
+    }
+
+    public function danhMucNguyenVatLieu(): HasMany
+    {
+        return $this->hasMany(DanhMucNguyenVatLieu::class, 'nha_cung_cap_id');
     }
 }

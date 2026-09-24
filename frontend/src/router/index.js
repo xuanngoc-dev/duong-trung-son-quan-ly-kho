@@ -64,6 +64,15 @@ const routes = [
         },
       },
       {
+        path: 'kho/kiem-tra-iqc',
+        name: 'iqc',
+        component: () => import('@/views/kho/kiemTraIqc.vue'),
+        meta: {
+          title: 'Kiểm tra IQC',
+          subtitle: 'Phiếu kiểm tra chất lượng nguyên vật liệu đầu vào',
+        },
+      },
+      {
         path: 'danh-muc/kho-vi-tri',
         component: () => import('@/views/shared/FeaturePage.vue'),
         meta: {
@@ -81,6 +90,24 @@ const routes = [
           subtitle: 'Quản lý thông tin và công nợ nhà cung cấp',
           action: 'Thêm nhà cung cấp',
           type: 'supplier',
+        },
+      },
+      {
+        path: 'danh-muc/nguyen-vat-lieu',
+        name: 'materials',
+        component: () => import('@/views/danh-muc/nguyenVatLieu.vue'),
+        meta: {
+          title: 'Nguyên vật liệu',
+          subtitle: 'Danh mục nguyên vật liệu và quy cách kiểm tra',
+        },
+      },
+      {
+        path: 'danh-muc/lo-nguyen-vat-lieu',
+        name: 'material-lots',
+        component: () => import('@/views/danh-muc/loNguyenVatLieu.vue'),
+        meta: {
+          title: 'Lô nguyên vật liệu',
+          subtitle: 'Theo dõi lô nhập, số lượng và kết quả kiểm tra',
         },
       },
       {

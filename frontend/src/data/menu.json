@@ -13,24 +13,9 @@
     "abbr": "VHK",
     "items": [
       {
-        "index": "/kho/phieu-nhap",
-        "title": "Phiếu nhập",
-        "icon": "Download"
-      },
-      {
-        "index": "/kho/phieu-xuat",
-        "title": "Phiếu xuất",
-        "icon": "Upload"
-      },
-      {
-        "index": "/kho/ton-kho",
-        "title": "Tồn kho",
-        "icon": "Box"
-      },
-      {
-        "index": "/kho/kiem-ke",
-        "title": "Kiểm kê",
-        "icon": "DocumentChecked"
+        "index": "/kho/kiem-tra-iqc",
+        "title": "Kiểm tra IQC",
+        "icon": "CircleCheck"
       }
     ]
   },
@@ -39,14 +24,14 @@
     "abbr": "DM",
     "items": [
       {
-        "index": "/danh-muc/hang-hoa",
-        "title": "Hàng hóa",
-        "icon": "Goods"
+        "index": "/danh-muc/nguyen-vat-lieu",
+        "title": "Nguyên vật liệu",
+        "icon": "Collection"
       },
       {
-        "index": "/danh-muc/kho-vi-tri",
-        "title": "Kho & vị trí",
-        "icon": "OfficeBuilding"
+        "index": "/danh-muc/lo-nguyen-vat-lieu",
+        "title": "Lô nguyên vật liệu",
+        "icon": "Tickets"
       },
       {
         "index": "/danh-muc/nha-cung-cap",
@@ -61,13 +46,8 @@
     "items": [
       {
         "index": "/bao-cao/xuat-nhap-ton",
-        "title": "Xuất nhập tồn",
+        "title": "Demo",
         "icon": "DataAnalysis"
-      },
-      {
-        "index": "/he-thong/cau-hinh",
-        "title": "Cấu hình",
-        "icon": "Setting"
       }
     ]
   },
