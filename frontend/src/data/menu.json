@@ -1,0 +1,85 @@
+[
+  {
+    "items": [
+      {
+        "index": "/tong-quan",
+        "title": "Tổng quan",
+        "icon": "Odometer"
+      }
+    ]
+  },
+  {
+    "header": "VẬN HÀNH KHO",
+    "abbr": "VHK",
+    "items": [
+      {
+        "index": "/kho/phieu-nhap",
+        "title": "Phiếu nhập",
+        "icon": "Download"
+      },
+      {
+        "index": "/kho/phieu-xuat",
+        "title": "Phiếu xuất",
+        "icon": "Upload"
+      },
+      {
+        "index": "/kho/ton-kho",
+        "title": "Tồn kho",
+        "icon": "Box"
+      },
+      {
+        "index": "/kho/kiem-ke",
+        "title": "Kiểm kê",
+        "icon": "DocumentChecked"
+      }
+    ]
+  },
+  {
+    "header": "DANH MỤC",
+    "abbr": "DM",
+    "items": [
+      {
+        "index": "/danh-muc/hang-hoa",
+        "title": "Hàng hóa",
+        "icon": "Goods"
+      },
+      {
+        "index": "/danh-muc/kho-vi-tri",
+        "title": "Kho & vị trí",
+        "icon": "OfficeBuilding"
+      },
+      {
+        "index": "/danh-muc/nha-cung-cap",
+        "title": "Nhà cung cấp",
+        "icon": "Van"
+      }
+    ]
+  },
+  {
+    "header": "BÁO CÁO & HỆ THỐNG",
+    "abbr": "BC",
+    "items": [
+      {
+        "index": "/bao-cao/xuat-nhap-ton",
+        "title": "Xuất nhập tồn",
+        "icon": "DataAnalysis"
+      },
+      {
+        "index": "/he-thong/cau-hinh",
+        "title": "Cấu hình",
+        "icon": "Setting"
+      }
+    ]
+  },
+  {
+    "header": "HỆ THỐNG",
+    "abbr": "HT",
+    "items": [
+      {
+        "index": "/he-thong/nhan-vien",
+        "title": "Nhân viên",
+        "icon": "User"
+      }
+    ]
+  }
+]

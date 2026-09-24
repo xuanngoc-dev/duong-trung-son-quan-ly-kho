@@ -1,0 +1,93 @@
+:root {
+  --el-color-primary: #337ecc;
+  --el-color-primary-light-9: #edf5ff;
+  --el-text-color-primary: #172033;
+  --el-text-color-regular: #303a4f;
+  --el-text-color-secondary: #697386;
+  font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: var(--el-text-color-primary);
+  background: var(--el-bg-color-page);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html.dark {
+  --el-text-color-primary: #f0f2f5;
+  --el-text-color-regular: #d8dce5;
+  --el-text-color-secondary: #a7adba;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--el-bg-color-page);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.el-card {
+  border-radius: 10px;
+}
+
+.el-table {
+  --el-table-header-bg-color: var(--el-fill-color-light);
+
+  th.el-table__cell {
+    padding: 3px 0;
+    color: var(--el-text-color-primary);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  td.el-table__cell {
+    padding: 3px 0;
+  }
+}
+
+.page-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+
+  h2 {
+    margin: 0 0 5px;
+    font-size: 22px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 700px) {
+  .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .el-card__body {
+    padding: 12px;
+  }
+}
