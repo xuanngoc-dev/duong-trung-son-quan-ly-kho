@@ -37,6 +37,11 @@
         "index": "/danh-muc/nha-cung-cap",
         "title": "Nhà cung cấp",
         "icon": "Van"
+      },
+      {
+        "index": "/danh-muc/tieu-chuan-kiem-tra",
+        "title": "Tiêu chuẩn kiểm tra",
+        "icon": "DocumentChecked"
       }
     ]
   },

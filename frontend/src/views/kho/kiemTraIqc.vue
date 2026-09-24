@@ -60,6 +60,9 @@ const bulkDeleting = ref(false)
 const keyword = ref('')
 const conclusionFilter = ref('')
 const lotFilter = ref('')
+const supplierFilter = ref([])
+const dateRange = ref([])
+const suppliers = ref([])
 const selectedRows = ref([])
 const tableRef = ref()
 const dialogOpen = ref(false)
@@ -216,9 +219,19 @@ function searchItems() {
   loadItems()
 }
 
+function supplierLabel(item) {
+  if (!item) return ''
+  return `${item.ma_nha_cung_cap} - ${item.ten_nha_cung_cap}`
+}
+
 async function loadLots() {
   const { data } = await http.get('/lo-nguyen-vat-lieu', { params: { limit: 100 } })
   lots.value = data.data || []
+}
+
+async function loadSuppliers() {
+  const { data } = await http.get('/nha-cung-cap', { params: { limit: 100 } })
+  suppliers.value = data.data || []
 }
 
 async function loadItems() {
@@ -231,6 +244,9 @@ async function loadItems() {
         q: keyword.value.trim() || undefined,
         ket_luan: conclusionFilter.value || undefined,
         lo_nguyen_vat_lieu_id: lotFilter.value || undefined,
+        nha_cung_cap_id: supplierFilter.value.length ? supplierFilter.value : undefined,
+        tu_ngay: dateRange.value?.[0] || undefined,
+        den_ngay: dateRange.value?.[1] || undefined,
         start: (page.value - 1) * limit.value,
         limit: limit.value,
       },
@@ -453,6 +469,7 @@ async function uploadImage({ file }) {
 
 onMounted(() => {
   loadLots().catch((error) => ElMessage.error(errorMessage(error)))
+  loadSuppliers().catch((error) => ElMessage.error(errorMessage(error)))
   loadItems()
 })
 </script>
@@ -463,6 +480,7 @@ onMounted(() => {
       <div class="filters">
         <CustomInput
           v-model="keyword"
+          class="keyword-filter"
           clearable
           placeholder="Tìm theo số lô, mã QR, người kiểm tra..."
           @keyup.enter="searchItems"
@@ -473,6 +491,29 @@ onMounted(() => {
         <CustomSelect v-model="lotFilter" clearable filterable placeholder="Tất cả lô">
           <CustomOption v-for="lot in lots" :key="lot.id" :label="lotLabel(lot)" :value="lot.id" />
         </CustomSelect>
+        <CustomSelect
+          v-model="supplierFilter"
+          class="supplier-filter"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+          clearable
+          filterable
+          placeholder="Nhà cung cấp"
+        >
+          <CustomOption v-for="item in suppliers" :key="item.id" :label="supplierLabel(item)" :value="item.id" />
+        </CustomSelect>
+        <div class="date-filter">
+          <CustomDatePicker
+            v-model="dateRange"
+            type="daterange"
+            value-format="YYYY-MM-DD"
+            range-separator="-"
+            start-placeholder="Từ ngày"
+            end-placeholder="Đến ngày"
+            clearable
+          />
+        </div>
         <CustomSelect v-model="conclusionFilter" clearable placeholder="Tất cả kết luận">
           <CustomOption v-for="item in conclusions" :key="item.value" :label="item.label" :value="item.value" />
         </CustomSelect>
@@ -505,8 +546,18 @@ onMounted(() => {
         <CustomTableColumn label="STT" width="70" align="center">
           <template #default="{ $index }">{{ (page - 1) * limit + $index + 1 }}</template>
         </CustomTableColumn>
-        <CustomTableColumn label="Số lô" min-width="140" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.lo_nguyen_vat_lieu?.so_lo_batch }}</template>
+        <CustomTableColumn label="Số lô" min-width="150">
+          <template #default="{ row }">
+            <div v-if="row.id" class="lot-cell">
+              <span class="lot-text">{{ row.lo_nguyen_vat_lieu?.so_lo_batch }}</span>
+              <span v-if="row.ket_luan === 'OK'" class="lot-mark lot-mark--ok" title="OK">
+                <CustomIcon><Check /></CustomIcon>
+              </span>
+              <span v-else class="lot-mark lot-mark--ng" title="NG">
+                <CustomIcon><Close /></CustomIcon>
+              </span>
+            </div>
+          </template>
         </CustomTableColumn>
         <CustomTableColumn label="Nguyên vật liệu" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
@@ -701,13 +752,29 @@ onMounted(() => {
 
 .filters {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   min-width: 0;
 
-  :deep(.el-input) { width: 300px; }
-  :deep(.el-select) { width: 220px; }
+  :deep(.el-select) { width: 200px; }
+}
+
+.keyword-filter {
+  width: 230px;
+}
+
+.supplier-filter {
+  width: 260px;
+}
+
+.date-filter {
+  flex: none;
+  width: 220px;
+
+  :deep(.el-date-editor) {
+    width: 100%;
+  }
 }
 
 .card-header {
@@ -728,17 +795,59 @@ onMounted(() => {
   gap: 2px;
 }
 
+.lot-cell {
+  display: inline-flex;
+  align-items: flex-start;
+  max-width: 100%;
+  gap: 2px;
+}
+
+.lot-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 13px;
+  height: 13px;
+  margin-top: 0px;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.lot-mark :deep(.el-icon) {
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.lot-mark :deep(svg) {
+  stroke: currentColor;
+  stroke-width: 2.5px;
+}
+
+.lot-mark--ok {
+  background: var(--el-color-success);
+}
+
+.lot-mark--ng {
+  background: var(--el-color-danger);
+}
+
 .full-control {
   width: 100%;
 }
 
 .thumb-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 4px;
+  overflow-x: auto;
 }
 
 .thumb {
+  flex: none;
   width: 40px;
   height: 40px;
   border-radius: 4px;
@@ -864,9 +973,17 @@ onMounted(() => {
     gap: 6px;
 
     :deep(.el-input),
-    :deep(.el-select) {
+    :deep(.el-select),
+    :deep(.el-date-editor) {
       width: 100%;
       min-width: 0;
+    }
+
+    .keyword-filter,
+    .supplier-filter,
+    .date-filter,
+    .date-filter :deep(.el-date-editor) {
+      width: 100%;
     }
   }
 

@@ -16,6 +16,10 @@ class PhieuKiemTraIqcController extends Controller
             'q' => ['nullable', 'string', 'max:255'],
             'ket_luan' => ['nullable', Rule::enum(KetLuanIqc::class)],
             'lo_nguyen_vat_lieu_id' => ['nullable', 'integer', Rule::exists('lo_nguyen_vat_lieu', 'id')],
+            'nha_cung_cap_id' => ['nullable', 'array'],
+            'nha_cung_cap_id.*' => ['integer', Rule::exists('nha_cung_cap', 'id')],
+            'tu_ngay' => ['nullable', 'date'],
+            'den_ngay' => ['nullable', 'date'],
             'start' => ['nullable', 'integer', 'min:0'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
         ], $this->messages());
@@ -32,7 +36,12 @@ class PhieuKiemTraIqcController extends Controller
                 });
             })
             ->when($filters['ket_luan'] ?? null, fn ($query, string $ketLuan) => $query->where('ket_luan', $ketLuan))
-            ->when($filters['lo_nguyen_vat_lieu_id'] ?? null, fn ($query, int $id) => $query->where('lo_nguyen_vat_lieu_id', $id));
+            ->when($filters['lo_nguyen_vat_lieu_id'] ?? null, fn ($query, int $id) => $query->where('lo_nguyen_vat_lieu_id', $id))
+            ->when($filters['nha_cung_cap_id'] ?? null, function ($query, array $ids) {
+                $query->whereHas('loNguyenVatLieu.nguyenVatLieu', fn ($query) => $query->whereIn('nha_cung_cap_id', $ids));
+            })
+            ->when($filters['tu_ngay'] ?? null, fn ($query, string $date) => $query->where('ngay_kiem_tra', '>=', $date.' 00:00:00'))
+            ->when($filters['den_ngay'] ?? null, fn ($query, string $date) => $query->where('ngay_kiem_tra', '<=', $date.' 23:59:59'));
 
         $total = (clone $query)->count();
         $items = $query
@@ -150,6 +159,11 @@ class PhieuKiemTraIqcController extends Controller
             'ngay_kiem_tra.date' => 'Ngày kiểm tra không hợp lệ.',
             'ket_luan.required' => 'Chọn kết luận.',
             'ket_luan.enum' => 'Kết luận chỉ nhận OK hoặc NG.',
+            'nha_cung_cap_id.array' => 'Nhà cung cấp không hợp lệ.',
+            'nha_cung_cap_id.*.integer' => 'Nhà cung cấp không hợp lệ.',
+            'nha_cung_cap_id.*.exists' => 'Nhà cung cấp không tồn tại.',
+            'tu_ngay.date' => 'Từ ngày kiểm tra không hợp lệ.',
+            'den_ngay.date' => 'Đến ngày kiểm tra không hợp lệ.',
             'hinh_anh_dinh_kem.array' => 'Danh sách hình ảnh không hợp lệ.',
             'hinh_anh_dinh_kem.max' => 'Tối đa 20 hình ảnh.',
             'hinh_anh_dinh_kem.*.required' => 'Nhập đường dẫn hình ảnh.',

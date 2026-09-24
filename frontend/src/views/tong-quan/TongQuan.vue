@@ -1,10 +1,161 @@
 <script setup>
-const stats = [
-  { label: 'Tổng hàng hóa', value: '1.248', note: '+36 trong tháng', icon: 'Goods', color: '#409eff' },
-  { label: 'Giá trị tồn kho', value: '2,84 tỷ', note: '+8,2% so tháng trước', icon: 'Money', color: '#67c23a' },
-  { label: 'Sắp hết hàng', value: '18', note: 'Cần nhập bổ sung', icon: 'Warning', color: '#e6a23c' },
-  { label: 'Phiếu chờ duyệt', value: '07', note: '3 nhập · 4 xuất', icon: 'Document', color: '#f56c6c' },
+import { computed, onMounted, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import http from '@/api/http'
+import { CustomButton, CustomDatePicker } from '@/components/element'
+
+const presets = [
+  { key: 'today', label: 'Hôm nay' },
+  // { key: 'yesterday', label: 'Hôm qua' },
+  { key: 'week', label: 'Tuần này' },
+  { key: 'month', label: 'Tháng này' },
+  // { key: 'lastMonth', label: 'Tháng trước' },
+  // { key: 'quarter', label: 'Quý này' },
+  // { key: 'lastQuarter', label: 'Quý trước' },
+  { key: 'year', label: 'Năm nay' },
 ]
+
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function formatIso(date) {
+  const pad = (value) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+function formatDisplay(value) {
+  const [year, month, day] = String(value || '').split('-')
+  if (!year || !month || !day) return ''
+  return `${day}/${month}/${year}`
+}
+
+function rangeFor(key) {
+  const today = startOfDay(new Date())
+  if (key === 'today') return [today, today]
+  if (key === 'yesterday') {
+    const day = new Date(today)
+    day.setDate(day.getDate() - 1)
+    return [day, day]
+  }
+  if (key === 'week') {
+    const start = new Date(today)
+    const weekday = start.getDay() || 7
+    start.setDate(start.getDate() - weekday + 1)
+    return [start, today]
+  }
+  if (key === 'month') return [new Date(today.getFullYear(), today.getMonth(), 1), today]
+  if (key === 'lastMonth') {
+    return [
+      new Date(today.getFullYear(), today.getMonth() - 1, 1),
+      new Date(today.getFullYear(), today.getMonth(), 0),
+    ]
+  }
+  if (key === 'quarter') {
+    const quarter = Math.floor(today.getMonth() / 3)
+    return [new Date(today.getFullYear(), quarter * 3, 1), today]
+  }
+  if (key === 'lastQuarter') {
+    const quarter = Math.floor(today.getMonth() / 3) - 1
+    const year = quarter < 0 ? today.getFullYear() - 1 : today.getFullYear()
+    const startMonth = ((quarter + 4) % 4) * 3
+    return [new Date(year, startMonth, 1), new Date(year, startMonth + 3, 0)]
+  }
+  return [new Date(today.getFullYear(), 0, 1), today]
+}
+
+const activePreset = ref('month')
+const dateRange = ref(rangeFor('month').map(formatIso))
+
+const periodLabel = computed(() => {
+  const [from, to] = dateRange.value || []
+  if (!from || !to) return 'Chọn khoảng thời gian'
+  return `${formatDisplay(from)} - ${formatDisplay(to)}`
+})
+
+function applyPreset(key) {
+  activePreset.value = key
+  dateRange.value = rangeFor(key).map(formatIso)
+}
+
+function onRangeChange(value) {
+  const [from, to] = value || []
+  activePreset.value = presets.find((item) => {
+    const [start, end] = rangeFor(item.key).map(formatIso)
+    return start === from && end === to
+  })?.key || ''
+}
+
+const overview = ref(null)
+const overviewLoading = ref(false)
+
+const stats = computed(() => {
+  const data = overview.value
+  const tong = data?.tong ?? 0
+  const ok = data?.ok ?? 0
+  const ng = data?.ng ?? 0
+  const itLoi = data?.it_loi
+  const nhieuLoi = data?.nhieu_loi
+
+  return [
+    { label: 'Số phiếu kiểm tra', value: String(tong), note: `OK ${ok} · NG ${ng}`, icon: 'Document', color: '#409eff' },
+    { label: 'Phiếu OK', value: String(ok), note: tong ? `${data.ty_le_ok}% phiếu đạt` : 'Chưa có phiếu', icon: 'CircleCheck', color: '#67c23a' },
+    { label: 'Phiếu NG', value: String(ng), note: tong ? `${data.ty_le_ng}% phiếu không đạt` : 'Chưa có phiếu', icon: 'CircleClose', color: '#f56c6c' },
+    { label: 'Tỷ lệ đạt', value: tong ? `${data.ty_le_ok}%` : '0%', note: `${ok}/${tong} phiếu OK`, icon: 'DataAnalysis', color: '#13c2c2' },
+    {
+      label: 'Ít lỗi nhất',
+      value: itLoi?.ten || '—',
+      note: itLoi ? `${itLoi.ng} NG / ${itLoi.tong} phiếu` : 'Chưa có dữ liệu',
+      icon: 'Medal',
+      color: '#67c23a',
+    },
+    {
+      label: 'Nhiều lỗi nhất',
+      value: nhieuLoi?.ten || '—',
+      note: nhieuLoi ? `${nhieuLoi.ng} NG / ${nhieuLoi.tong} phiếu` : 'Chưa có dữ liệu',
+      icon: 'Warning',
+      color: '#e6a23c',
+    },
+  ]
+})
+
+const supplierCategories = computed(() => (overview.value?.nha_cung_cap || []).map((item) => item.ten))
+const supplierMax = computed(() => {
+  const rows = overview.value?.nha_cung_cap || []
+  return Math.max(1, ...rows.flatMap((item) => [item.ok, item.ng]))
+})
+
+const yTicks = computed(() => {
+  const max = supplierMax.value
+  if (max <= 6) return Array.from({ length: max + 1 }, (_, index) => max - index)
+  const steps = 4
+  const ticks = Array.from({ length: steps + 1 }, (_, index) => Math.round((max * (steps - index)) / steps))
+  return [...new Set(ticks)]
+})
+
+function barHeight(value) {
+  if (!value) return '0%'
+  return `${Math.max(6, (value / supplierMax.value) * 86)}%`
+}
+
+async function loadOverview() {
+  const [from, to] = dateRange.value || []
+  overviewLoading.value = true
+  try {
+    const { data } = await http.get('/tong-quan', {
+      params: { tu_ngay: from || undefined, den_ngay: to || undefined },
+    })
+    overview.value = data.data
+  } catch (error) {
+    overview.value = null
+    ElMessage.error(error.response?.data?.message || 'Không tải được số liệu tổng quan.')
+  } finally {
+    overviewLoading.value = false
+  }
+}
+
+watch(dateRange, loadOverview)
+onMounted(loadOverview)
 
 const lowStock = [
   { code: 'VT-00124', name: 'Ống PVC Bình Minh Ø90', warehouse: 'Kho A', stock: 8, minimum: 20 },
@@ -22,26 +173,44 @@ const activities = [
 
 <template>
   <div class="dashboard">
-    <div class="welcome">
-      <div>
-        <p>Thứ Tư, 23 tháng 09</p>
-        <h2>Chào buổi tối, Quản trị viên 👋</h2>
-        <span>Tình hình kho hàng của bạn hôm nay.</span>
+    <div class="period-filter">
+      <div class="period-range">
+        <CustomDatePicker
+          v-model="dateRange"
+          size="small"
+          type="daterange"
+          value-format="YYYY-MM-DD"
+          range-separator="-"
+          start-placeholder="Từ ngày"
+          end-placeholder="Đến ngày"
+          @change="onRangeChange"
+        />
       </div>
-      <el-button type="primary" :icon="'Plus'">Tạo phiếu mới</el-button>
+      <div class="period-shortcuts">
+        <CustomButton
+          v-for="item in presets"
+          :key="item.key"
+          size="small"
+          :type="activePreset === item.key ? 'primary' : 'default'"
+          @click="applyPreset(item.key)"
+        >
+          {{ item.label }}
+        </CustomButton>
+      </div>
+      <span class="period-label">{{ periodLabel }}</span>
     </div>
 
-    <el-row :gutter="16" class="stats">
-      <el-col v-for="item in stats" :key="item.label" :xs="24" :sm="12" :lg="6">
+    <el-row v-loading="overviewLoading" :gutter="16" class="stats">
+      <el-col v-for="item in stats" :key="item.label" :xs="12" :sm="12" :lg="4">
         <el-card shadow="hover" class="stat-card">
           <div class="stat-icon" :style="{ color: item.color, background: `${item.color}18` }">
-            <el-icon :size="24"><component :is="item.icon" /></el-icon>
+            <el-icon :size="18"><component :is="item.icon" /></el-icon>
           </div>
-          <div>
-            <span>{{ item.label }}</span>
-            <strong>{{ item.value }}</strong>
-            <small>{{ item.note }}</small>
-          </div>
+            <div class="stat-copy">
+              <span>{{ item.label }}</span>
+              <strong :title="item.value">{{ item.value }}</strong>
+              <small>{{ item.note }}</small>
+            </div>
         </el-card>
       </el-col>
     </el-row>
@@ -52,30 +221,29 @@ const activities = [
           <template #header>
             <div class="card-title">
               <div>
-                <strong>Nhập xuất kho</strong>
-                <small>Biến động 7 ngày gần nhất</small>
+                <strong>Tỷ lệ OK / NG theo nhà cung cấp</strong>
+                <small>{{ periodLabel }}</small>
               </div>
-              <el-radio-group size="small" model-value="week">
-                <el-radio-button value="week">7 ngày</el-radio-button>
-                <el-radio-button value="month">30 ngày</el-radio-button>
-              </el-radio-group>
             </div>
           </template>
-          <div class="chart">
-            <div class="chart-grid">
-              <span v-for="n in 5" :key="n" />
+          <div v-if="supplierCategories.length" class="chart-plot">
+            <div class="y-axis">
+              <span v-for="(tick, index) in yTicks" :key="`${tick}-${index}`">{{ tick }}</span>
             </div>
-            <div class="bars">
-              <div v-for="(day, index) in ['T5', 'T6', 'T7', 'CN', 'T2', 'T3', 'T4']" :key="day" class="bar-group">
-                <div class="bar-pair">
-                  <i class="in" :style="{ height: `${45 + ((index * 17) % 48)}%` }" />
-                  <i class="out" :style="{ height: `${30 + ((index * 11) % 55)}%` }" />
+            <div class="chart">
+              <div class="bars">
+                <div v-for="item in overview.nha_cung_cap" :key="item.ma || item.ten" class="bar-group" :title="`${item.ten}: OK ${item.ok} · NG ${item.ng} · lỗi ${item.ty_le_ng}%`">
+                  <div class="bar-pair">
+                    <i class="in" :style="{ height: barHeight(item.ok) }"><b>{{ item.ok }}</b></i>
+                    <i class="out" :style="{ height: barHeight(item.ng) }"><b>{{ item.ng }}</b></i>
+                  </div>
+                  <span>{{ item.ma || item.ten }}</span>
                 </div>
-                <span>{{ day }}</span>
               </div>
             </div>
           </div>
-          <div class="legend"><i class="in" /> Nhập kho <i class="out" /> Xuất kho</div>
+          <p v-else class="chart-empty">Không có phiếu kiểm tra trong khoảng thời gian này.</p>
+          <div class="legend"><i class="in" /> OK <i class="out" /> NG</div>
         </el-card>
       </el-col>
 
@@ -151,6 +319,33 @@ const activities = [
   }
 }
 
+.period-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.period-range {
+  flex: none;
+  width: 210px;
+
+  :deep(.el-date-editor) {
+    width: 100%;
+  }
+}
+
+.period-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.period-label {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
 .stats {
   row-gap: 16px;
 }
@@ -158,16 +353,17 @@ const activities = [
 .stat-card :deep(.el-card__body) {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  padding: 14px;
 }
 
 .stat-icon {
   display: grid;
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .stat-card span,
@@ -178,10 +374,21 @@ const activities = [
   font-size: 12px;
 }
 
+.stat-copy {
+  min-width: 0;
+}
+
+.stat-copy strong,
+.stat-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .stat-card strong {
   display: block;
-  margin: 3px 0;
-  font-size: 24px;
+  margin: 2px 0;
+  font-size: 18px;
 }
 
 .card-title {
@@ -200,57 +407,98 @@ const activities = [
   height: 350px;
 }
 
-.chart {
-  position: relative;
-  height: 210px;
+.chart-plot {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
 }
 
-.chart-grid {
-  position: absolute;
-  inset: 0 0 25px;
+.y-axis {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  flex: none;
+  width: 28px;
+  height: 175px;
+  color: var(--el-text-color-secondary);
+  font-size: 11px;
+  line-height: 1;
+  text-align: right;
+}
 
-  span {
-    border-top: 1px dashed var(--el-border-color-lighter);
-  }
+.chart {
+  flex: 1;
+  min-width: 0;
+  height: 230px;
+  overflow-x: auto;
 }
 
 .bars {
-  position: absolute;
-  inset: 10px 12px 0;
   display: flex;
   align-items: flex-end;
-  justify-content: space-around;
+  gap: 10px;
+  height: 100%;
+  min-width: 100%;
+  width: max-content;
+  padding: 0 4px;
 }
 
 .bar-group {
   display: flex;
+  width: 56px;
   height: 100%;
+  flex: none;
   flex-direction: column;
   justify-content: flex-end;
   gap: 7px;
   text-align: center;
   color: var(--el-text-color-secondary);
   font-size: 11px;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .bar-pair {
   display: flex;
   height: 175px;
   align-items: flex-end;
+  justify-content: center;
   gap: 4px;
+  padding-top: 16px;
+  box-sizing: border-box;
 
   i {
-    width: 12px;
-    min-height: 8px;
+    position: relative;
+    width: 16px;
+    min-height: 0;
     border-radius: 4px 4px 0 0;
+  }
+
+  b {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    color: var(--el-text-color-primary);
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 1;
+    transform: translateX(-50%);
   }
 }
 
-i.in { background: #409eff; }
-i.out { background: #a0cfff; }
+i.in { background: #67c23a; }
+i.out { background: #f56c6c; }
+
+.chart-empty {
+  margin: 48px 0;
+  color: var(--el-text-color-secondary);
+  text-align: center;
+}
 
 .legend {
   display: flex;
@@ -294,6 +542,11 @@ i.out { background: #a0cfff; }
 
   .chart-card {
     height: 330px;
+  }
+
+  .period-range,
+  .period-range :deep(.el-date-editor) {
+    width: 100%;
   }
 }
 </style>

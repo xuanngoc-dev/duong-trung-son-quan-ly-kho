@@ -102,6 +102,15 @@ const routes = [
         },
       },
       {
+        path: 'danh-muc/tieu-chuan-kiem-tra',
+        name: 'inspection-standards',
+        component: () => import('@/views/danh-muc/tieuChuanKiemTra.vue'),
+        meta: {
+          title: 'Tiêu chuẩn kiểm tra',
+          subtitle: 'Danh mục tiêu chuẩn và chỉ tiêu kiểm tra',
+        },
+      },
+      {
         path: 'danh-muc/lo-nguyen-vat-lieu',
         name: 'material-lots',
         component: () => import('@/views/danh-muc/loNguyenVatLieu.vue'),

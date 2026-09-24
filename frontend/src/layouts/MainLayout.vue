@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import SideMenu from '@/components/SideMenu.vue'
 import api from '@/api/http'
 import { useLayoutStore } from '@/stores/layout'
@@ -54,6 +55,33 @@ async function checkApi() {
   }
 }
 
+async function logout() {
+  try {
+    await ElMessageBox.confirm('Đăng xuất khỏi hệ thống?', 'Đăng xuất', {
+      type: 'warning',
+      confirmButtonText: 'Đăng xuất',
+      cancelButtonText: 'Hủy',
+    })
+  } catch {
+    return
+  }
+
+  try {
+    if (localStorage.getItem('auth_token')) {
+      await api.post('/logout')
+    }
+  } catch {
+    // Phiên đã hết hạn vẫn được xóa trên trình duyệt.
+  }
+
+  localStorage.removeItem('auth_token')
+  ElMessage.success('Đã đăng xuất.')
+}
+
+function onUserCommand(command) {
+  if (command === 'logout') logout()
+}
+
 watch(() => route.fullPath, () => {
   mobileMenuOpen.value = false
 })
@@ -84,7 +112,7 @@ onUnmounted(() => {
       <div class="brand">
         <div class="brand-mark"><el-icon><Box /></el-icon></div>
         <div v-show="!sidebarCollapsed || isMobile" class="brand-copy">
-          <strong>DTS Warehouse</strong>
+          <strong>Quản lý kho</strong>
           <small>Quản lý kho</small>
         </div>
       </div>
@@ -107,11 +135,11 @@ onUnmounted(() => {
             </el-icon>
           </el-button>
           <div>
-            <h1>{{ pageTitle }}</h1>
+            <!-- <h1>{{ pageTitle }}</h1>
             <el-breadcrumb separator="/">
               <el-breadcrumb-item>Quản lý kho</el-breadcrumb-item>
               <el-breadcrumb-item>{{ pageTitle }}</el-breadcrumb-item>
-            </el-breadcrumb>
+            </el-breadcrumb> -->
           </div>
         </div>
 
@@ -132,7 +160,7 @@ onUnmounted(() => {
           <el-button text circle @click="settingsOpen = true">
             <el-icon :size="20"><Setting /></el-icon>
           </el-button>
-          <el-dropdown>
+          <el-dropdown @command="onUserCommand">
             <div class="user">
               <el-avatar :size="34">A</el-avatar>
               <div class="user-copy">
@@ -144,7 +172,7 @@ onUnmounted(() => {
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item>Thông tin tài khoản</el-dropdown-item>
-                <el-dropdown-item divided>Đăng xuất</el-dropdown-item>
+                <el-dropdown-item command="logout" divided>Đăng xuất</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
